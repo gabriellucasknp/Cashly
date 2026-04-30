@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASHLY — Dashboard Financeiro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" th:href="@{/cashly.css}">
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <span class="navbar-logo">CASHLY</span>
+        <div class="ticker-bar">
+            <span class="ticker-item">
+                <span class="label">SALDO</span>
+                <span id="tickerSaldo">R$ 0,00</span>
+            </span>
+            <span class="ticker-item">
+                <span class="label">ENTRADAS</span>
+                <span id="tickerEntradas" class="up">R$ 0,00</span>
+            </span>
+            <span class="ticker-item">
+                <span class="label">SAÍDAS</span>
+                <span id="tickerSaidas" class="down">R$ 0,00</span>
+            </span>
+            <span class="ticker-item">
+                <span class="label">PEND. IA</span>
+                <span id="tickerCount">0</span>
+            </span>
+        </div>
+        <div class="navbar-actions">
+            <button class="btn btn-outline" onclick="exportarRelatorio()">Exportar</button>
+            <button class="btn btn-ai" id="btnAI" onclick="toggleAIPanel()">
+                <span class="ai-icon">✦</span> Agente IA
+            </button>
+            <button class="btn btn-primary" id="btnNova">+ Nova</button>
+        </div>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="container">
+
+        <!-- CARDS DE RESUMO -->
+        <div class="summary-grid">
+            <div class="summary-card card-saldo">
+                <div class="card-label">Saldo Total</div>
+                <div class="card-value" id="cardSaldo">R$ 0,00</div>
+                <span class="card-badge badge-info">balanço geral</span>
+            </div>
+            <div class="summary-card card-entrada">
+                <div class="card-label">Entradas</div>
+                <div class="card-value up" id="cardEntradas">R$ 0,00</div>
+                <span class="card-badge badge-up">receitas</span>
+            </div>
+            <div class="summary-card card-saida">
+                <div class="card-label">Saídas</div>
+                <div class="card-value down" id="cardSaidas">R$ 0,00</div>
+                <span class="card-badge badge-down">despesas</span>
+            </div>
+            <div class="summary-card card-ia">
+                <div class="card-label">Pendentes IA</div>
+                <div class="card-value neutral" id="cardPendentes">0</div>
+                <span class="card-badge badge-info">aguardando classificação</span>
+            </div>
+        </div>
+
+        <!-- GRID PRINCIPAL -->
+        <div class="main-grid">
+
+            <!-- TABELA -->
+            <div class="table-panel">
+                <div class="panel-header">
+                    <h2>Transações</h2>
+                    <button class="btn btn-outline" onclick="loadTransactions()">↻ Atualizar</button>
+                </div>
+                <div class="search-bar">
+                    <input type="text" id="searchInput" class="search-input"
+                        placeholder="Buscar descrição, categoria, origem...">
+                    <select id="filterTipo" class="filter-select">
+                        <option value="">Todos os tipos</option>
+                        <option value="ENTRADA">ENTRADA</option>
+                        <option value="SAIDA">SAÍDA</option>
+                    </select>
+                    <select id="filterStatus" class="filter-select">
+                        <option value="">Todos os status</option>
+                        <option value="PENDENTE">PENDENTE</option>
+                        <option value="CATEGORIZADO">CATEGORIZADO</option>
+                        <option value="REVISADO">REVISADO</option>
+                    </select>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th data-sort="tipo" onclick="sortBy('tipo')">TIPO</th>
+                                <th data-sort="valor" onclick="sortBy('valor')">VALOR</th>
+                                <th data-sort="data" onclick="sortBy('data')">DATA</th>
+                                <th data-sort="descricao" onclick="sortBy('descricao')">DESCRIÇÃO</th>
+                                <th data-sort="categoria" onclick="sortBy('categoria')">CATEGORIA</th>
+                                <th data-sort="origem" onclick="sortBy('origem')">ORIGEM</th>
+                                <th data-sort="statusIA" onclick="sortBy('statusIA')">STATUS IA</th>
+                                <th data-sort="statusPagamento" onclick="sortBy('statusPagamento')">PAGAMENTO</th>
+                                <th>AÇÕES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transacoesTbody"></tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <span id="pageInfo">0 registros</span>
+                    <div id="pageBtns"></div>
+                </div>
+            </div>
+
+            <!-- PAINEL LATERAL -->
+            <aside class="side-panel">
+                <div class="chart-panel">
+                    <div class="panel-header">
+                        <h2>Por Mês</h2>
+                    </div>
+                    <canvas id="cashlyChart" height="220"></canvas>
+                </div>
+                <div class="io-panel">
+                    <div class="panel-header">
+                        <h2>Importar / Exportar</h2>
+                    </div>
+                    <div class="drop-zone" id="dropZone">
+                        <div class="drop-icon">📂</div>
+                        <p>Arraste um arquivo <strong>.xlsx</strong> aqui<br>ou clique para selecionar</p>
+                        <input type="file" id="fileInput" accept=".xlsx" style="display:none">
+                    </div>
+                    <button class="btn btn-outline" style="width:100%;margin-top:12px" onclick="exportarRelatorio()">⬇
+                        Exportar Relatório .xlsx</button>
+                </div>
+            </aside>
+
+        </div>
+    </main>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">+ Nova Transação</h3>
+                <button class="btn-icon" id="modalClose">✕</button>
+            </div>
+            <form id="formTransacao">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo *</label>
+                        <select id="inputTipo" required>
+                            <option value="ENTRADA">ENTRADA</option>
+                            <option value="SAIDA">SAÍDA</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Valor *</label>
+                        <input type="number" id="inputValor" step="0.01" min="0.01" required placeholder="0,00">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Data *</label>
+                        <input type="date" id="inputData" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição *</label>
+                        <input type="text" id="inputDescricao" required placeholder="Ex: Salário, Mercado...">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Categoria <span class="muted">(IA classifica se vazio)</span></label>
+                        <input type="text" id="inputCategoria" placeholder="Ex: Alimentação">
+                    </div>
+                    <div class="form-group">
+                        <label>Origem <span class="muted">(opcional)</span></label>
+                        <input type="text" id="inputOrigem" placeholder="Ex: Nubank, Bradesco">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="btnSalvar"
+                    style="width:100%;margin-top:8px">Salvar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOASTS -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- AI CHAT PANEL -->
+    <div class="ai-panel" id="aiPanel">
+        <div class="ai-panel-header">
+            <div class="ai-header-info">
+                <span class="ai-status-dot"></span>
+                <span class="ai-header-title">Agente IA</span>
+                <span class="ai-header-sub">Classificação financeira</span>
+            </div>
+            <button class="btn-icon" onclick="toggleAIPanel()">✕</button>
+        </div>
+        <div class="ai-messages" id="aiMessages">
+            <div class="ai-msg ai-msg-bot">
+                <div class="ai-avatar">✦</div>
+                <div class="ai-bubble">
+                    Olá! Sou o agente de IA do Cashly. Posso classificar transações, responder dúvidas sobre suas
+                    finanças ou categorizar lançamentos pendentes.<br><br>
+                    <button class="btn btn-ai-action" onclick="classificarPendentes()">⚡ Classificar pendentes</button>
+                </div>
+            </div>
+        </div>
+        <div class="ai-input-row">
+            <input type="text" class="ai-input" id="aiInput" placeholder="Descreva uma transação para classificar..."
+                onkeydown="if(event.key==='Enter') enviarMsgIA()">
+            <button class="ai-send-btn" onclick="enviarMsgIA()">➤</button>
+        </div>
+    </div>
+    <div class="ai-backdrop" id="aiBackdrop" onclick="toggleAIPanel()"></div>
+
+    <script th:src="@{/js/cashly.js}"></script>
+</body>
+
+</html>

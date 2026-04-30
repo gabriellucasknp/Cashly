@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: 'postgres:16'
+    environment:
+      POSTGRES_DB: pagamentos
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d pagamentos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  ai-agent:
+    build:
+      context: ./ai-agent
+      dockerfile: Dockerfile
+    ports:
+      - '8001:8001'
+    env_file:
+      - ./ai-agent/.env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  app:
+    build: .
+    ports:
+      - '8080:8080'
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/pagamentos
+      DB_USER: myuser
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai-agent:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+

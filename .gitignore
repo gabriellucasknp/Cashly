@@ -1,0 +1,29 @@
+# Maven
+rest/target/
+!rest/.mvn/wrapper/maven-wrapper.properties
+
+# Node / TypeScript compilado
+rest/node/
+rest/node_modules/
+
+# Secrets
+rest/ai-agent/.env
+*.env
+!*.env.example
+
+# Python
+rest/ai-agent/__pycache__/
+rest/ai-agent/.venv/
+rest/ai-agent/venv/
+
+# IDE
+.idea/
+*.iml
+.vscode/settings.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Demo module
+demo/
