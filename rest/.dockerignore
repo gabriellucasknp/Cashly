@@ -1,0 +1,28 @@
+# Ignora artefatos de build Maven
+target/
+
+# Ignora dependencias Node
+node_modules/
+node/
+
+# Ignora arquivos de ambiente (segredos)
+.env
+ai-agent/.env
+
+# Ignora arquivos de teste e relatorios
+src/test/
+
+# Ignora IDEs
+.idea/
+*.iml
+.vscode/
+
+# Ignora OS
+.DS_Store
+Thumbs.db
+
+# Ignora logs
+*.log
+
+# Ignora o proprio watcher de auto-commit
+../auto-commit.ps1

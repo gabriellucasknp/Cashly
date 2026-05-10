@@ -27,3 +27,6 @@ Thumbs.db
 
 # Demo module
 demo/
+
+# Auto-commit watcher
+auto-commit.ps1

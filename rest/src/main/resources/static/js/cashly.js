@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupModal();
     setupImport();
     setupSearch();
+    setupMicDescricao();
 });
 // ─── LOAD ─────────────────────────────────────────────────────────────────────
 async function loadTransactions() {
@@ -440,6 +441,10 @@ window.exportarRelatorio = exportarRelatorio;
 window.toggleAIPanel = toggleAIPanel;
 window.enviarMsgIA = enviarMsgIA;
 window.classificarPendentes = classificarPendentes;
+window.startVoiceTransaction = startVoiceTransaction;
+window.cancelVoice = cancelVoice;
+window.toggleMicAI = toggleMicAI;
+window.loadTransactions = loadTransactions;
 // ─── AI AGENT PANEL ───────────────────────────────────────────────────────────
 let aiPanelOpen = false;
 function toggleAIPanel() {
@@ -514,6 +519,208 @@ async function enviarMsgIA() {
         sendBtn.disabled = false;
         input.focus();
     }
+}
+// ─── RECONHECIMENTO DE VOZ ────────────────────────────────────────────────────
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+let activeRecognition = null;
+let micTarget = null;
+function isSpeechSupported() {
+    return !!SpeechRecognitionAPI;
+}
+function buildRecognition() {
+    const rec = new SpeechRecognitionAPI();
+    rec.lang = 'pt-BR';
+    rec.continuous = false;
+    rec.interimResults = true;
+    return rec;
+}
+function stopAllMics() {
+    if (activeRecognition) {
+        activeRecognition.abort();
+        activeRecognition = null;
+    }
+    micTarget = null;
+    document.querySelectorAll('.btn-mic, .ai-mic-btn').forEach((b) => {
+        b.classList.remove('recording', 'error');
+    });
+    const fab = document.getElementById('voiceFab');
+    if (fab)
+        fab.classList.remove('recording');
+}
+// ── Mic no campo Descrição do modal ──────────────────────────────────────────
+function setupMicDescricao() {
+    const btn = document.getElementById('btnMicDescricao');
+    if (!btn)
+        return;
+    if (!isSpeechSupported()) {
+        btn.style.display = 'none';
+        return;
+    }
+    btn.addEventListener('click', toggleMicDescricao);
+}
+function toggleMicDescricao() {
+    if (activeRecognition && micTarget === 'descricao') {
+        stopAllMics();
+        return;
+    }
+    if (!isSpeechSupported()) {
+        toast('Reconhecimento de voz não suportado neste navegador', 'error');
+        return;
+    }
+    stopAllMics();
+    micTarget = 'descricao';
+    const btn = document.getElementById('btnMicDescricao');
+    const input = document.getElementById('inputDescricao');
+    activeRecognition = buildRecognition();
+    btn.classList.add('recording');
+    activeRecognition.onresult = (e) => {
+        const transcript = Array.from(e.results)
+            .map((r) => r[0].transcript)
+            .join('');
+        input.value = transcript;
+    };
+    activeRecognition.onend = () => {
+        btn.classList.remove('recording');
+        micTarget = null;
+        activeRecognition = null;
+    };
+    activeRecognition.onerror = (e) => {
+        btn.classList.remove('recording');
+        btn.classList.add('error');
+        setTimeout(() => btn.classList.remove('error'), 2000);
+        micTarget = null;
+        activeRecognition = null;
+        if (e.error !== 'aborted')
+            toast('Microfone indisponível: ' + e.error, 'error');
+    };
+    activeRecognition.start();
+}
+// ── Mic no painel de IA ───────────────────────────────────────────────────────
+function toggleMicAI() {
+    if (activeRecognition && micTarget === 'ai') {
+        stopAllMics();
+        return;
+    }
+    if (!isSpeechSupported()) {
+        toast('Reconhecimento de voz não suportado neste navegador', 'error');
+        return;
+    }
+    stopAllMics();
+    micTarget = 'ai';
+    const btn = document.getElementById('btnMicAI');
+    const input = document.getElementById('aiInput');
+    activeRecognition = buildRecognition();
+    btn.classList.add('recording');
+    input.value = '';
+    input.placeholder = 'Ouvindo...';
+    activeRecognition.onresult = (e) => {
+        const transcript = Array.from(e.results)
+            .map((r) => r[0].transcript)
+            .join('');
+        input.value = transcript;
+    };
+    activeRecognition.onend = () => {
+        btn.classList.remove('recording');
+        input.placeholder = 'Descreva ou fale uma transação...';
+        micTarget = null;
+        activeRecognition = null;
+        if (input.value.trim())
+            void enviarMsgIA();
+    };
+    activeRecognition.onerror = (e) => {
+        btn.classList.remove('recording');
+        btn.classList.add('error');
+        input.placeholder = 'Descreva ou fale uma transação...';
+        setTimeout(() => btn.classList.remove('error'), 2000);
+        micTarget = null;
+        activeRecognition = null;
+        if (e.error !== 'aborted')
+            toast('Microfone indisponível: ' + e.error, 'error');
+    };
+    activeRecognition.start();
+}
+// ── FAB: captura completa de transação por voz ────────────────────────────────
+function startVoiceTransaction() {
+    if (!isSpeechSupported()) {
+        toast('Reconhecimento de voz não suportado neste navegador. Use Chrome ou Edge.', 'error');
+        return;
+    }
+    if (activeRecognition && micTarget === 'voice') {
+        stopAllMics();
+        closeVoiceModal();
+        return;
+    }
+    stopAllMics();
+    micTarget = 'voice';
+    const modal = document.getElementById('voiceModal');
+    const status = document.getElementById('voiceStatus');
+    const transcript = document.getElementById('voiceTranscript');
+    const fab = document.getElementById('voiceFab');
+    modal.classList.add('open');
+    fab.classList.add('recording');
+    status.textContent = 'Ouvindo... diga a transação';
+    transcript.textContent = '';
+    activeRecognition = buildRecognition();
+    activeRecognition.onresult = (e) => {
+        const text = Array.from(e.results)
+            .map((r) => r[0].transcript)
+            .join('');
+        transcript.textContent = '"' + text + '"';
+    };
+    activeRecognition.onend = () => {
+        const capturedText = transcript.textContent?.replace(/^"|"$/g, '').trim() || '';
+        closeVoiceModal();
+        micTarget = null;
+        activeRecognition = null;
+        if (capturedText)
+            processVoiceCommand(capturedText);
+    };
+    activeRecognition.onerror = (e) => {
+        closeVoiceModal();
+        micTarget = null;
+        activeRecognition = null;
+        if (e.error !== 'aborted')
+            toast('Erro no microfone: ' + e.error, 'error');
+    };
+    activeRecognition.start();
+}
+function cancelVoice() {
+    stopAllMics();
+    closeVoiceModal();
+}
+function closeVoiceModal() {
+    const modal = document.getElementById('voiceModal');
+    if (modal)
+        modal.classList.remove('open');
+    const fab = document.getElementById('voiceFab');
+    if (fab)
+        fab.classList.remove('recording');
+}
+// ── Parser de comandos de voz ─────────────────────────────────────────────────
+function processVoiceCommand(text) {
+    const lower = text.toLowerCase().trim();
+    let tipo = 'SAIDA';
+    if (/recebi|entrada|ganhei|salário|salario|depósito|deposito|pix recebi|transferência recebi/.test(lower)) {
+        tipo = 'ENTRADA';
+    }
+    let valor = null;
+    const valorMatch = lower.match(/(\d+(?:[.,]\d{1,2})?)\s*(?:reais?|real|r\$)?/);
+    if (valorMatch) {
+        valor = parseFloat(valorMatch[1].replace(',', '.'));
+    }
+    let descricao = text;
+    const preposMatch = lower.match(/(?:\bem\b|\bno\b|\bna\b|\bcom\b|\bde\b|\bpara\b)\s+(.+)$/);
+    if (preposMatch) {
+        descricao = preposMatch[1].charAt(0).toUpperCase() + preposMatch[1].slice(1);
+    }
+    openModalNew();
+    (getEl('inputTipo')).value = tipo;
+    if (valor !== null) {
+        (getEl('inputValor')).value = String(valor);
+    }
+    (getEl('inputDescricao')).value = descricao;
+    const valorStr = valor !== null ? `R$ ${formatMoney(valor)}` : 'valor não detectado';
+    toast(`Voz: ${tipo} · ${valorStr} · "${descricao}"`, 'info');
 }
 async function classificarPendentes() {
     const thinkingMsg = addAIMessage('', 'bot', true);

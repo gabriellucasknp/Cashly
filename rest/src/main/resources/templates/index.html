@@ -173,7 +173,12 @@
                     </div>
                     <div class="form-group">
                         <label>Descrição *</label>
-                        <input type="text" id="inputDescricao" required placeholder="Ex: Salário, Mercado...">
+                        <div class="input-mic-row">
+                            <input type="text" id="inputDescricao" required placeholder="Ex: Salário, Mercado...">
+                            <button type="button" class="btn-mic" id="btnMicDescricao" title="Capturar por voz">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="form-row">
@@ -194,6 +199,29 @@
 
     <!-- TOASTS -->
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- VOICE FAB -->
+    <button class="voice-fab" id="voiceFab" onclick="startVoiceTransaction()" title="Registrar transação por voz">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </button>
+
+    <!-- VOICE MODAL -->
+    <div class="voice-modal-overlay" id="voiceModal">
+        <div class="voice-modal-inner">
+            <div class="voice-wave-container" id="voiceWave">
+                <div class="voice-wave-bar"></div>
+                <div class="voice-wave-bar"></div>
+                <div class="voice-wave-bar"></div>
+                <div class="voice-wave-bar"></div>
+                <div class="voice-wave-bar"></div>
+                <div class="voice-wave-bar"></div>
+                <div class="voice-wave-bar"></div>
+            </div>
+            <div class="voice-status" id="voiceStatus">Ouvindo...</div>
+            <div class="voice-transcript" id="voiceTranscript"></div>
+            <button class="btn btn-outline" style="margin-top:8px" onclick="cancelVoice()">Cancelar</button>
+        </div>
+    </div>
 
     <!-- AI CHAT PANEL -->
     <div class="ai-panel" id="aiPanel">
@@ -216,7 +244,10 @@
             </div>
         </div>
         <div class="ai-input-row">
-            <input type="text" class="ai-input" id="aiInput" placeholder="Descreva uma transação para classificar..."
+            <button type="button" class="ai-mic-btn" id="btnMicAI" onclick="toggleMicAI()" title="Falar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </button>
+            <input type="text" class="ai-input" id="aiInput" placeholder="Descreva ou fale uma transação..."
                 onkeydown="if(event.key==='Enter') enviarMsgIA()">
             <button class="ai-send-btn" onclick="enviarMsgIA()">➤</button>
         </div>
