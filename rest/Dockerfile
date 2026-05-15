@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY mvnw mvnw.cmd pom.xml ./
 COPY .mvn .mvn
+# Frontend config required by frontend-maven-plugin (TypeScript build)
+COPY package.json package-lock.json tsconfig.json ./
 RUN chmod +x mvnw
 
 # Baixa dependências antes de copiar o código (cache de layer)
