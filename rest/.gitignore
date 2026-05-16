@@ -6,7 +6,6 @@ target/
 # Variáveis de ambiente e segredos
 .env
 application-dev.properties
-application-prod.properties
 
 # IDE
 .idea/
