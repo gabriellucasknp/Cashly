@@ -1,0 +1,45 @@
+databases:
+  - name: cashly-db
+    databaseName: pagamentos
+    user: myuser
+    plan: free
+    region: oregon
+
+services:
+  - type: web
+    name: cashly-ai-agent
+    runtime: docker
+    dockerfilePath: ./rest/ai-agent/Dockerfile
+    dockerContext: ./rest/ai-agent
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false  # preencher manualmente no dashboard do Render: https://aistudio.google.com/app/apikey
+
+  - type: web
+    name: cashly-app
+    runtime: docker
+    dockerfilePath: ./rest/Dockerfile
+    dockerContext: ./rest
+    plan: free
+    region: oregon
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DB_URL
+        fromDatabase:
+          name: cashly-db
+          property: connectionString
+      - key: DB_USER
+        fromDatabase:
+          name: cashly-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: cashly-db
+          property: password
+      - key: AI_AGENT_URL
+        sync: false  # preencher após o primeiro deploy com a URL do serviço cashly-ai-agent (ex: https://cashly-ai-agent.onrender.com)
