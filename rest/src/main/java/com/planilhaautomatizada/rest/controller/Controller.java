@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/pagamentos")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "${app.cors.allowed-origins:*}")
 public class Controller {
 
     private final PagamentoService pagamentoService;
